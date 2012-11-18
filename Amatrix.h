@@ -2,7 +2,7 @@
  * Amatrix.h
  *
  *  Created on: Oct 16, 2012
- *      Author: Seyed Abbas Hosseini
+ *      Author: Pouya Samangouei
  */
 
 #ifndef Amatrix_H_
@@ -10,8 +10,8 @@
 
 #include<stdlib.h>
 #include<cblas.h>
+#include<clapack.h>
 class Avector;
-class dummyA;
 class Amatrix {
 protected:
 	double* A;
@@ -47,6 +47,7 @@ public:
 	Amatrix& operator-=(Amatrix& B); //
 	Amatrix& operator*(double val); // multiplies each element to val
 	Amatrix& operator*(Amatrix& B); //
+	Amatrix& gsle(Amatrix&B);
 	Amatrix& operator/(double val); // devides each element to val
 	double operator!(); // returns what's inside a 1*1 cell
 	Amatrix& operator~(); // Transpose operator i.e., ~A=AT

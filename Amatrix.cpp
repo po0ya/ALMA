@@ -2,20 +2,16 @@
  * Amatrix.cpp
  *
  *  Created on: Oct 16, 2012
- *      Author: abbas
+ *      Author: Pouya Samangouei
  */
 
 #include "Amatrix.h"
 #include <cstring>
 #include<iostream>
 #include<cblas.h>
+#include<clapack.h>
+
 using namespace std;
-/*Amatrix::Amatrix() {
- A = 0;
- row_size = 0;
- column_size = 0;
- isTransposed = true;
- }*/
 
 Amatrix::Amatrix(size_t rows, size_t columns) // get an empty matrix of size m-by-n which equlas zero
 {
@@ -275,6 +271,20 @@ Amatrix& Amatrix::operator =(const double val) {
 		*A = val;
 	return *this;
 	//else exception
+}
+
+Amatrix& Amatrix::gsle(Amatrix&B)
+{
+	//if(rows!=columns && rows != B.row_size())
+		//exception
+	Amatrix* tempA = new Amatrix(*this);
+	Amatrix* tempB = new Amatrix(B);
+	int* tempIPIV = new int[rows];
+	int result;
+	result = clapack_dgesv(CblasColMajor,rows,B.column_size(),tempA->asVector(),rows,tempIPIV,tempB->asVector(),B.row_size());
+	return *tempB;
+	//if(result!=0)
+	//exception
 }
 
 Amatrix& Amatrix::operator~() {
