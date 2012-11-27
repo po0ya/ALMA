@@ -10,7 +10,6 @@
 #include<iostream>
 #include<cblas.h>
 #include<clapack.h>
-
 using namespace std;
 
 Amatrix::Amatrix(size_t rows, size_t columns) // get an empty matrix of size m-by-n which equlas zero
@@ -39,17 +38,29 @@ Amatrix::Amatrix(double* that, size_t rows, size_t columns, size_t step,
 Amatrix::Amatrix(Amatrix& B) // Make a copy of B
 {
 	A = new double[B.row_size() * B.column_size()];
-	if (B.isTrans()) {
-		double * BB = B.asVector();
-		init(B.column_size(), B.row_size(), false);
-		for (int i = 0; i < rows; i++)
-			for (int j = 0; j < columns; j++)
-				A[i + j * step] = BB[i * step + j];
-	} else {
-		memcpy(A, B.asVector(), B.row_size() * B.column_size() * sizeof(double));
-		init(B.row_size(), B.column_size(), B.isTrans());
-	}
+	memcpy(A, B.asVector(), B.row_size() * B.column_size() * sizeof(double));
+	init(B.row_size(), B.column_size(), B.isTrans());
 	this->shared = 0;
+
+	this->step = B.getStep();
+}
+
+Amatrix& Amatrix::operator=(Amatrix& B) {
+	/*if (B.column_size() == columns && B.row_size()) {
+	 if (B.isShared())
+	 cout << "warning: right hand's matrix is shared" << endl;
+	 init(B.row_size(),B.column_size(),B.isTrans());
+	 cblas_dcopy(rows * columns, B.asVector(),
+	 (B.row_size() == 1) ? B.getStep() : 1, A,
+	 (row_size() == 1) ? step : 1);
+	 }*/
+	delete A;
+	A = new double[B.row_size() * B.column_size()];
+	memcpy(A, B.asVector(), B.row_size() * B.column_size() * sizeof(double));
+	init(B.row_size(), B.column_size(), B.isTrans());
+	this->shared = 0;
+	this->step = B.getStep();
+	//else exception
 }
 
 void Amatrix::init(size_t rows, size_t columns, bool isTransposed) {
@@ -63,14 +74,14 @@ void Amatrix::init(size_t rows, size_t columns, bool isTransposed) {
 Amatrix& Amatrix::operator[](size_t i) {
 	Amatrix* dum;
 	if (isTransposed) {
-		if (rows == 1)
+		if (rows == 1 && i < columns)
 			dum = new Amatrix(A + i, 1, 1, step, isTransposed);
-		else
+		else if (i < rows)
 			dum = new Amatrix(A + i * step, 1, columns, step, isTransposed);
 	} else {
-		if (rows == 1)
+		if (rows == 1 && i < columns)
 			dum = new Amatrix(A + i * step, 1, 1, step, isTransposed);
-		else
+		else if (i < rows)
 			dum = new Amatrix(A + i, 1, columns, step, isTransposed);
 	}
 
@@ -179,26 +190,13 @@ Amatrix& Amatrix::operator /(const double val) {
 
 Amatrix& Amatrix::operator *(Amatrix& B) {
 	Amatrix * temp = new Amatrix(rows, B.column_size());
-	//Amatrix T = B;
-	//bool ist = B.isTransposed;
 	cblas_dgemm(CblasColMajor, this->isTrans() ? CblasTrans : CblasNoTrans,
 			((Amatrix&) B).isTrans() ? CblasTrans : CblasNoTrans, rows,
-			columns, columns, 1, A, rows, ((Amatrix&) B).asVector(),
-			B.row_size(), 1, temp->asVector(), rows);
+			B.column_size(), columns, 1.0, A,isTransposed? columns: rows, ((Amatrix&) B).asVector(),
+			B.isTrans()? B.column_size():B.row_size(), 0.0, temp->asVector(), rows);
 	return *temp;
 }
 
-Amatrix& Amatrix::operator=(Amatrix& B) {
-	if (B.column_size() == columns && B.row_size()) {
-		if (B.isShared())
-			cout << "warning: left hand's matrix is shared" << endl;
-
-		cblas_dcopy(rows * columns, B.asVector(),
-				(B.row_size() == 1) ? B.getStep() : 1, A,
-				(row_size() == 1) ? step : 1);
-	}
-	//else exception
-}
 size_t Amatrix::getStep() {
 	return step;
 }
@@ -227,8 +225,8 @@ Amatrix& Amatrix::operator+(Amatrix& B) {
 		Amatrix*temp = new Amatrix(*this);
 		(*temp) += B;
 		return *temp;
-	}
-	//else exception
+	} else
+		cout << " SUM ERR: dimmensions don't match" << endl;
 }
 
 Amatrix& Amatrix::operator-(Amatrix& B) {
@@ -246,7 +244,8 @@ Amatrix& Amatrix::operator+=(Amatrix& B) {
 		*(this) += *temp;
 	} else if (B.row_size() == rows && B.column_size() == columns)
 		cblas_daxpy(rows * columns, 1, B.asVector(), 1, A, rows == 1 ? step : 1);
-	//else exception
+	else
+		cout << " SUM = ERR: dimmensions don't match" << endl;
 }
 
 Amatrix& Amatrix::operator-=(Amatrix& B) {
@@ -273,22 +272,22 @@ Amatrix& Amatrix::operator =(const double val) {
 	//else exception
 }
 
-Amatrix& Amatrix::gsle(Amatrix&B)
-{
+Amatrix& Amatrix::gsle(Amatrix&B) {
 	//if(rows!=columns && rows != B.row_size())
-		//exception
+	//exception
 	Amatrix* tempA = new Amatrix(*this);
 	Amatrix* tempB = new Amatrix(B);
 	int* tempIPIV = new int[rows];
 	int result;
-	result = clapack_dgesv(CblasColMajor,rows,B.column_size(),tempA->asVector(),rows,tempIPIV,tempB->asVector(),B.row_size());
+	result = clapack_dgesv(CblasColMajor, rows, B.column_size(),
+			tempA->asVector(), rows, tempIPIV, tempB->asVector(), B.row_size());
 	return *tempB;
 	//if(result!=0)
 	//exception
 }
 
 Amatrix& Amatrix::operator~() {
-	Amatrix* temp = new Amatrix(rows, columns, A, !isTransposed);
+	Amatrix* temp = new Amatrix(A, columns, rows, step, !isTransposed);
 	return *temp;
 	//else exception
 }
