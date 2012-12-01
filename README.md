@@ -7,6 +7,9 @@ Look at example.cpp to see how to use ALMA.
 In short, Amatrix class has a column major array and stores number of rows and columns etc.
 
 The following operators are implemented:
+
 Amatrix +*-/ double = Amatrix
+
 Amatrix +*-/ Amatrix = Amatrix
+
 X= A.inv(B) -> solves A * X = B which is a general system of linear equations.
