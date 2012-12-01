@@ -34,7 +34,7 @@ public:
 	double getConstant();
 	int isShared(); // shows whether the vector is shared between two objects
 	size_t getStep();
-
+	static double* transposeIt(double* A, size_t row, size_t col);
 	Amatrix& operator=(Amatrix& B); // make a copy
 	Amatrix& operator=(double val); // assign val to one element
 	Amatrix& operator+(double val); // add val to every element

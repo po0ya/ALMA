@@ -31,8 +31,9 @@ int main() {
 	tempF[0][1] = 3;
 	printMatrix(~tempC);
 	printMatrix(~tempF);
-	printMatrix( (tempF)*(~tempA));
-	tempA = (tempF)*(~tempA)/2;
+	printMatrix((tempF)*(~tempA));
+	printMatrix(~tempF+tempC);
+	tempA = (tempA)/2;
 	printMatrix(tempA);
 	cout<<(tempF).row_size()<<"col: "<<(tempF).column_size()<<endl;
 	cout<<(~tempC).row_size()<<"col: "<<(~tempC).column_size()<<endl;

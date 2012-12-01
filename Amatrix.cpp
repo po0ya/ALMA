@@ -37,11 +37,19 @@ Amatrix::Amatrix(double* that, size_t rows, size_t columns, size_t step,
 
 Amatrix::Amatrix(Amatrix& B) // Make a copy of B
 {
+
+	A = new double[B.row_size() * B.column_size()];
+	if(B.isTrans())
+	{
+		for(size_t i=0 ;i<row;i++)
+			for(size_t j=0;j<col;j++)
+				result[i*col+j] = A[i+j*row];
+	} else {
 	A = new double[B.row_size() * B.column_size()];
 	memcpy(A, B.asVector(), B.row_size() * B.column_size() * sizeof(double));
 	init(B.row_size(), B.column_size(), B.isTrans());
+	}
 	this->shared = 0;
-
 	this->step = B.getStep();
 }
 
@@ -135,6 +143,15 @@ int Amatrix::isShared() {
 	return shared;
 }
 
+double* Amatrix::transposeIt(double* A, size_t row, size_t col) {
+	double* result = new double[row*col];
+	for(size_t i=0 ;i<row;i++)
+		for(size_t j=0;j<col;j++)
+			result[i*col+j] = A[i+j*row];
+
+	return result;
+}
+
 Amatrix& Amatrix::cloneColumn(size_t i) {
 	if (isTransposed) {
 		if (i >= rows) {
@@ -192,8 +209,9 @@ Amatrix& Amatrix::operator *(Amatrix& B) {
 	Amatrix * temp = new Amatrix(rows, B.column_size());
 	cblas_dgemm(CblasColMajor, this->isTrans() ? CblasTrans : CblasNoTrans,
 			((Amatrix&) B).isTrans() ? CblasTrans : CblasNoTrans, rows,
-			B.column_size(), columns, 1.0, A,isTransposed? columns: rows, ((Amatrix&) B).asVector(),
-			B.isTrans()? B.column_size():B.row_size(), 0.0, temp->asVector(), rows);
+			B.column_size(), columns, 1.0, A, isTransposed ? columns : rows,
+			((Amatrix&) B).asVector(), B.isTrans() ? B.column_size()
+					: B.row_size(), 0.0, temp->asVector(), rows);
 	return *temp;
 }
 
@@ -215,14 +233,15 @@ Amatrix& Amatrix::operator-(double val) {
 
 Amatrix& Amatrix::operator+=(double val) {
 	double * temp = new double[rows * columns];
-	fill_n(temp, rows * columns, 1);
+
+	//fill_n(temp, rows * columns, 1);
 	cblas_daxpy(rows * columns, val, temp, 1, A, rows == 1 ? step : 1);
-	//	delete temp;
+	//delete temp;
 }
 
 Amatrix& Amatrix::operator+(Amatrix& B) {
 	if (B.row_size() == rows && B.column_size() == columns) {
-		Amatrix*temp = new Amatrix(*this);
+		Amatrix* temp = new Amatrix(*this);
 		(*temp) += B;
 		return *temp;
 	} else
