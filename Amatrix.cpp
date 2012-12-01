@@ -12,6 +12,11 @@
 #include<clapack.h>
 using namespace std;
 
+Amatrix::Amatrix() {
+	A = 0;
+	init(0, 0, false);
+}
+
 Amatrix::Amatrix(size_t rows, size_t columns) // get an empty matrix of size m-by-n which equlas zero
 {
 	A = new double[rows * columns];
@@ -39,15 +44,17 @@ Amatrix::Amatrix(Amatrix& B) // Make a copy of B
 {
 
 	A = new double[B.row_size() * B.column_size()];
-	if(B.isTrans())
-	{
-		for(size_t i=0 ;i<row;i++)
-			for(size_t j=0;j<col;j++)
-				result[i*col+j] = A[i+j*row];
+	double* BB = B.asVector();
+	int Bstep = B.getStep();
+	if (B.isTrans()) {
+		init(B.row_size(), B.column_size(), false); //this is probably wrong.
+		for (size_t i = 0; i < columns; i++)
+			for (size_t j = 0; j < rows; j++)
+				A[i * step + j] = BB[i + j * Bstep];
 	} else {
-	A = new double[B.row_size() * B.column_size()];
-	memcpy(A, B.asVector(), B.row_size() * B.column_size() * sizeof(double));
-	init(B.row_size(), B.column_size(), B.isTrans());
+		A = new double[B.row_size() * B.column_size()];
+		memcpy(A, B.asVector(), B.row_size() * B.column_size() * sizeof(double));
+		init(B.row_size(), B.column_size(), B.isTrans());
 	}
 	this->shared = 0;
 	this->step = B.getStep();
@@ -62,9 +69,12 @@ Amatrix& Amatrix::operator=(Amatrix& B) {
 	 (B.row_size() == 1) ? B.getStep() : 1, A,
 	 (row_size() == 1) ? step : 1);
 	 }*/
-	delete A;
-	A = new double[B.row_size() * B.column_size()];
-	memcpy(A, B.asVector(), B.row_size() * B.column_size() * sizeof(double));
+	if (A != B.asVector()) {
+		if (A != 0)
+			delete[] A;
+		A = new double[B.row_size() * B.column_size()];
+		memcpy(A, B.asVector(), B.row_size() * B.column_size() * sizeof(double));
+	}
 	init(B.row_size(), B.column_size(), B.isTrans());
 	this->shared = 0;
 	this->step = B.getStep();
@@ -143,15 +153,6 @@ int Amatrix::isShared() {
 	return shared;
 }
 
-double* Amatrix::transposeIt(double* A, size_t row, size_t col) {
-	double* result = new double[row*col];
-	for(size_t i=0 ;i<row;i++)
-		for(size_t j=0;j<col;j++)
-			result[i*col+j] = A[i+j*row];
-
-	return result;
-}
-
 Amatrix& Amatrix::cloneColumn(size_t i) {
 	if (isTransposed) {
 		if (i >= rows) {
@@ -188,7 +189,7 @@ size_t Amatrix::column_size() {
 
 Amatrix::~Amatrix() {
 	if (shared == 0)
-		delete A;
+		delete[] A;
 	else
 		shared--;
 }
@@ -233,13 +234,13 @@ Amatrix& Amatrix::operator-(double val) {
 
 Amatrix& Amatrix::operator+=(double val) {
 	double * temp = new double[rows * columns];
-
-	//fill_n(temp, rows * columns, 1);
+	fill_n(temp, rows * columns, 1);
 	cblas_daxpy(rows * columns, val, temp, 1, A, rows == 1 ? step : 1);
-	//delete temp;
+	//	delete temp;
 }
 
 Amatrix& Amatrix::operator+(Amatrix& B) {
+	transposeMe();
 	if (B.row_size() == rows && B.column_size() == columns) {
 		Amatrix* temp = new Amatrix(*this);
 		(*temp) += B;
@@ -249,6 +250,7 @@ Amatrix& Amatrix::operator+(Amatrix& B) {
 }
 
 Amatrix& Amatrix::operator-(Amatrix& B) {
+	transposeMe();
 	if (B.row_size() == rows && B.column_size() == columns) {
 		Amatrix*temp = new Amatrix(*this);
 		(*temp) -= B;
@@ -257,7 +259,25 @@ Amatrix& Amatrix::operator-(Amatrix& B) {
 	//else exception
 }
 
+void Amatrix::transposeMe() {
+	if (isTransposed) {
+		double* transposedArray = new double[rows * columns];
+		isTransposed = false;
+		for (size_t i = 0; i < columns; i++)
+			for (size_t j = 0; j < rows; j++)
+				transposedArray[i * rows + j] = A[i + j * columns];
+
+		if(shared==0)
+			delete[] A;
+		else
+			shared=0;
+
+		A = transposedArray;
+	}
+}
+
 Amatrix& Amatrix::operator+=(Amatrix& B) {
+	transposeMe();
 	if (B.isTrans()) {
 		Amatrix*temp = new Amatrix(B);
 		*(this) += *temp;
@@ -268,6 +288,7 @@ Amatrix& Amatrix::operator+=(Amatrix& B) {
 }
 
 Amatrix& Amatrix::operator-=(Amatrix& B) {
+	transposeMe();
 	if (B.isTrans()) {
 		Amatrix*temp = new Amatrix(B);
 		*(this) -= *temp;
@@ -278,10 +299,10 @@ Amatrix& Amatrix::operator-=(Amatrix& B) {
 }
 
 Amatrix& Amatrix::operator-=(double val) {
-
 	double * temp = new double[rows * columns];
 	fill_n(temp, rows * columns, -1);
-	cblas_daxpy(rows * columns, val, temp, 1, A, 1);
+	cblas_daxpy(rows * columns, val, temp, 1, A, rows == 1 ? step : 1);
+	//delete temp;
 }
 
 Amatrix& Amatrix::operator =(const double val) {

@@ -15,26 +15,30 @@ int main() {
 	Amatrix tempF(2, 3, F, false);
 	Amatrix tempD(3, 1, D, false);
 
-	printMatrix(tempA);
-//	printMatrix(tempA - tempB);
-//	printMatrix(tempA + tempB);
-//	printMatrix(tempA * tempB);
-//	printMatrix(tempB + 2);
-//	printMatrix(tempB - 1);
-//	printMatrix(tempB * 3);
-//	printMatrix(tempB / 2);
-	/*printMatrix(~tempC);
-	Amatrix tempG(~tempF);
-	printMatrix(tempF);
-	printMatrix(tempG);
-	*/
+/*	printMatrix(tempA);
+	printMatrix(tempA - tempB);
+	printMatrix(tempA + tempB);
+	printMatrix(tempA * tempB);
+	printMatrix(tempB + 2);
+	printMatrix(tempB - 1);
+	printMatrix(tempB * 3);
+	printMatrix(tempB / 2);
 	tempF[0][1] = 3;
+	printMatrix(tempF);
+	printMatrix(tempG);*/
+
 	printMatrix(~tempC);
-	printMatrix(~tempF);
-	printMatrix((tempF)*(~tempA));
-	printMatrix(~tempF+tempC);
-	tempA = (tempA)/2;
-	printMatrix(tempA);
+	Amatrix tempG(~tempF);
+//	Amatrix tempAt(~tempA);
+//	printMatrix(tempAt);
+//	printMatrix(~tempC);
+//	printMatrix(~tempF);
+//	printMatrix((tempF)*(~tempA));
+	//tempA = ~tempF;
+	printMatrix(tempF);
+	printMatrix(tempF+(~tempC));
+//	tempA = (tempA)/2;
+//	printMatrix(tempA);
 	cout<<(tempF).row_size()<<"col: "<<(tempF).column_size()<<endl;
 	cout<<(~tempC).row_size()<<"col: "<<(~tempC).column_size()<<endl;
 //	printMatrix(tempA.gsle(tempD));

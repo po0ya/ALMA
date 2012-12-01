@@ -21,6 +21,7 @@ protected:
 	size_t column_index;
 	void init(size_t, size_t,bool); //initializes
 public:
+	Amatrix();
 	Amatrix(double*, size_t, size_t, size_t, bool); //this constructor is used for getting arrays and rows of the matrix
 	//Amatrix(); not useful
 	Amatrix(size_t, size_t); // get an empty matrix of size m-by-n which equlas zero
@@ -34,7 +35,7 @@ public:
 	double getConstant();
 	int isShared(); // shows whether the vector is shared between two objects
 	size_t getStep();
-	static double* transposeIt(double* A, size_t row, size_t col);
+	void transposeMe();
 	Amatrix& operator=(Amatrix& B); // make a copy
 	Amatrix& operator=(double val); // assign val to one element
 	Amatrix& operator+(double val); // add val to every element
